@@ -70,5 +70,6 @@
     "url": "https://github.com/herzcthu/ollama-vscode/issues"
   },
   "homepage": "https://github.com/herzcthu/ollama-vscode#readme",
-  "icon": "media/ollama.png"
+  "icon": "media/ollama.png",
+  "publisher": "herzcthu"
 }
