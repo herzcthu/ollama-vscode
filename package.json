@@ -64,11 +64,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/ollama-vscode.git"
+    "url": "https://github.com/herzcthu/ollama-vscode.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/ollama-vscode/issues"
+    "url": "https://github.com/herzcthu/ollama-vscode/issues"
   },
-  "homepage": "https://github.com/yourusername/ollama-vscode#readme",
+  "homepage": "https://github.com/herzcthu/ollama-vscode#readme",
   "icon": "media/ollama.png"
 }
