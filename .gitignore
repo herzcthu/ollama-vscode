@@ -1,0 +1,48 @@
+# Node and VS Code
+node_modules/
+out/
+dist/
+.vscode-test/
+*.vsix
+
+# VS Code settings and workspace
+.vscode/
+
+# Build artifacts
+*.map
+*.tsbuildinfo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Extension packaging
+.vsce/
+
+# Ignore test output
+.vscode-test/
+
+# Ignore local env files
+.env
+.env.*
+
+# Ignore coverage
+coverage/
+
+# Ignore lock files (optional, if not using lockfiles in repo)
+# package-lock.json
+yarn.lock
+
+# Ignore compiled TypeScript (if not needed)
+# *.js
+
+# Ignore backup files
+*~
+
+# Ignore media build artifacts (if any)
+media/*.bak
