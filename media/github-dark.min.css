@@ -1,0 +1,18 @@
+/* GitHub Dark theme for highlight.js (minified) */
+.hljs { display: block; overflow-x: auto; padding: 0.5em; background: #23272e; color: #f8f8f2; }
+.hljs-comment, .hljs-quote { color: #6a9955; }
+.hljs-keyword, .hljs-selector-tag, .hljs-subst { color: #569cd6; }
+.hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable, .hljs-tag .hljs-attr { color: #b5cea8; }
+.hljs-string, .hljs-doctag { color: #ce9178; }
+.hljs-title, .hljs-section, .hljs-selector-id { color: #4ec9b0; }
+.hljs-subst { font-weight: normal; }
+.hljs-type, .hljs-class .hljs-title { color: #4ec9b0; }
+.hljs-tag, .hljs-name, .hljs-attribute { color: #569cd6; }
+.hljs-regexp, .hljs-link { color: #d16969; }
+.hljs-symbol, .hljs-bullet { color: #b5cea8; }
+.hljs-built_in, .hljs-builtin-name { color: #dcdcaa; }
+.hljs-meta { color: #9cdcfe; }
+.hljs-deletion { background: #ffdddd; }
+.hljs-addition { background: #ddffdd; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: bold; }

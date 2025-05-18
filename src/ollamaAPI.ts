@@ -48,16 +48,19 @@ export async function getAvailableModels(): Promise<string[]> {
     }
 }
 
-/** Send user message to Ollama API */
-export async function sendMessageToOllama(userMessage: string): Promise<string> {
+/** Send user message to Ollama API with streaming partial responses and custom system prompt */
+export async function sendMessageToOllama(userMessage: string, onPartial?: (chunk: string) => void, systemPromptOverride?: string): Promise<string> {
     const workspacePath = vscode.workspace.rootPath || "";
-    const relevantCode = extractRelevantCode(workspacePath);
+    const relevantCode = systemPromptOverride !== undefined ? systemPromptOverride : extractRelevantCode(workspacePath);
     const optimizedMessage = truncatePrompt(userMessage, 512); // Keep within safe token limit
 
     const apiUrl = `${getApiBaseUrl()}/chat`;
     const model = vscode.workspace.getConfiguration().get<string>("ollama.model") || "llama3.2";
 
-    console.log("Sending request to Ollama API at:", apiUrl); // Debug log
+    console.log('[sendMessageToOllama] API call to:', apiUrl);
+    console.log('[sendMessageToOllama] Model:', model);
+    console.log('[sendMessageToOllama] System prompt length:', relevantCode.length);
+    console.log('[sendMessageToOllama] User message:', optimizedMessage);
 
     const response = await fetch(apiUrl, {
         method: "POST",
@@ -65,7 +68,7 @@ export async function sendMessageToOllama(userMessage: string): Promise<string> 
         body: JSON.stringify({
             model: model,
             messages: [
-                { role: "system", content: `You are an AI helping with VS Code extension development. Here is relevant code:\n\n${relevantCode}` },
+                { role: "system", content: relevantCode },
                 { role: "user", content: optimizedMessage }
             ]
         })
@@ -84,18 +87,33 @@ export async function sendMessageToOllama(userMessage: string): Promise<string> 
     for await (const chunk of readableStream) {
         const textChunk = decoder.decode(chunk);
         buffer += textChunk;
-
-        try {
-            const json = JSON.parse(buffer); // Parse only complete JSON objects
-            if (json.message?.content) {
-                completeMessage += json.message.content;
-                buffer = ""; // Reset buffer after successful parsing
+        let lines = buffer.split(/\r?\n/);
+        buffer = lines.pop() ?? ""; // Last line may be incomplete
+        for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+                const json = JSON.parse(line);
+                if (json.message?.content) {
+                    if (onPartial) onPartial(json.message.content);
+                    completeMessage += json.message.content;
+                }
+            } catch {
+                // Ignore parse errors for incomplete lines
             }
-        } catch {
-            // Ignore parse errors (incomplete JSON chunks) and keep accumulating
         }
     }
-
+    // After stream ends, process any remaining buffer
+    if (buffer.trim()) {
+        try {
+            const json = JSON.parse(buffer);
+            if (json.message?.content) {
+                if (onPartial) onPartial(json.message.content);
+                completeMessage += json.message.content;
+            }
+        } catch {
+            // Ignore
+        }
+    }
     return completeMessage || "No response received from Ollama.";
 }
 

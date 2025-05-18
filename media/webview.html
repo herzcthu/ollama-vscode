@@ -23,6 +23,24 @@
             header { padding: 10px 8px 8px 8px; }
         }
     </style>
+    <script src="./marked.min.js"></script>
+    <script src="./highlight.min.js"></script>
+    <link rel="stylesheet" href="{{HIGHLIGHT_CSS}}">
+    <script>
+    // Ensure marked and highlight.js are initialized after both are loaded
+    window.addEventListener('DOMContentLoaded', function() {
+        if (window.marked && window.hljs) {
+            marked.setOptions({
+                highlight: function(code, lang) {
+                    if (lang && hljs.getLanguage(lang)) {
+                        return hljs.highlight(code, { language: lang }).value;
+                    }
+                    return hljs.highlightAuto(code).value;
+                }
+            });
+        }
+    });
+    </script>
 </head>
 <body>
     <header>
@@ -47,6 +65,10 @@
         window.addEventListener("message", event => {
             if (event.data.type === "modelsList") {
                 populateModelDropdown(event.data.models);
+            } else if (event.data.type === "partialResponse") {
+                appendMessage(event.data.partial, "bot", true);
+            } else if (event.data.type === "responseDone") {
+                finalizeBotMessage();
             } else if (event.data.response) {
                 appendMessage(event.data.response, "bot");
             } else if (event.data.type === 'logoUri') {
@@ -56,6 +78,54 @@
                 }
             }
         });
+
+        let currentBotMessageDiv = null;
+        let currentBotMessageRaw = "";
+        function fixNewlines(text) {
+            let fixed = text.replace(/\n{3,}/g, '\n\n');
+            fixed = fixed.replace(/([^\n])\n([^\n])/g, '$1 $2');
+            return fixed;
+        }
+        function appendMessage(content, sender, isPartial = false) {
+            const chatDiv = document.getElementById("chat-container");
+            let newMessage;
+            if (isPartial && sender === "bot") {
+                if (!currentBotMessageDiv) {
+                    newMessage = document.createElement("div");
+                    newMessage.classList.add("message", sender);
+                    chatDiv.appendChild(newMessage);
+                    currentBotMessageDiv = newMessage;
+                    currentBotMessageRaw = "";
+                } else {
+                    newMessage = currentBotMessageDiv;
+                }
+                // Accumulate raw text, show as plain text for streaming
+                currentBotMessageRaw += content;
+                newMessage.textContent = fixNewlines(currentBotMessageRaw);
+                chatDiv.scrollTop = chatDiv.scrollHeight;
+                return;
+            }
+            newMessage = document.createElement("div");
+            newMessage.classList.add("message", sender);
+            if (sender === "bot") {
+                newMessage.innerHTML = marked.parse(fixNewlines(content));
+            } else {
+                newMessage.textContent = content;
+            }
+            chatDiv.appendChild(newMessage);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+            if (sender === "bot") {
+                currentBotMessageDiv = null;
+                currentBotMessageRaw = "";
+            }
+        }
+        function finalizeBotMessage() {
+            if (currentBotMessageDiv && currentBotMessageRaw) {
+                currentBotMessageDiv.innerHTML = marked.parse(fixNewlines(currentBotMessageRaw));
+            }
+            currentBotMessageDiv = null;
+            currentBotMessageRaw = "";
+        }
 
         function populateModelDropdown(models) {
             const modelSelector = document.getElementById("modelSelector");
@@ -68,7 +138,13 @@
             });
             if (models.length > 0) {
                 modelSelector.value = models[0];
+                // Send initial model selection to extension
+                vscode.postMessage({ type: "setModel", model: models[0] });
             }
+            // Add change event to update model on dropdown change
+            modelSelector.onchange = function() {
+                vscode.postMessage({ type: "setModel", model: modelSelector.value });
+            };
         }
 
         function sendMessage() {
@@ -90,27 +166,6 @@
                 sendMessage();
             }
         });
-
-        function appendMessage(content, sender) {
-            const chatDiv = document.getElementById("chat-container");
-            const newMessage = document.createElement("div");
-            newMessage.classList.add("message", sender);
-
-            // Detect and format code inside bot responses
-            if (sender === "bot" && content.includes("```")) {
-                const codeBlockMatch = content.match(/```([^`]+)```/);
-                if (codeBlockMatch) {
-                    const codeBlock = document.createElement("pre");
-                    codeBlock.textContent = codeBlockMatch[1];
-                    newMessage.appendChild(codeBlock);
-                    content = content.replace(codeBlockMatch[0], "").trim();
-                }
-            }
-
-            newMessage.innerHTML += content;
-            chatDiv.appendChild(newMessage);
-            chatDiv.scrollTop = chatDiv.scrollHeight;
-        }
 
         // Set logo src using webview.asWebviewUri
         (function() {
